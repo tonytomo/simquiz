@@ -8,6 +8,7 @@ import {
 
 export const DEFAULT_QUIZ_INTRO: IQuizIntro = {
 	title: '',
+	description: '',
 	instruction: '',
 	example: ''
 };
@@ -16,6 +17,7 @@ export const DEFAULT_QUIZ_SETTINGS: IQuizSettings = {
 	numberOfQuestion: 10,
 	timePerQuestionInSecond: 10,
 	shuffleQuestion: false,
+	shuffleAnswer: false,
 	oneWay: false
 };
 

@@ -114,13 +114,14 @@
 	<!-- TODO: Simplify style -->
 
 	<section
-		class="scrollbar-simple size-full overflow-y-auto rounded-4xl border-12 border-gray-100 bg-gray-100 p-6 dark:border-gray-900 dark:bg-gray-950"
+		class="scrollbar-simple size-full overflow-y-auto rounded-4xl border-12 border-gray-100 bg-gray-200 p-6 dark:border-gray-900 dark:bg-gray-950"
 	>
 		{#if currentFocus === 'review'}
 			<div class="flex flex-col gap-4">
 				<h2 class="text-gradient place-self-center text-4xl font-black">Review</h2>
 				<!-- TODO: Buat desain pakai window -->
 				<p>Nama Kuis: {quizIntro.title}</p>
+				<p>Deskripsi: {quizIntro.description}</p>
 				<p>Jumlah Referensi: {quizRefs.length}</p>
 				<p>Jumlah Pertanyaan: {quizQuestions.length}</p>
 
@@ -140,6 +141,10 @@
 							placeholder="Judul Kuis"
 							class="input"
 						/>
+					</label>
+					<label class="flex items-start gap-4">
+						<span class="w-64 font-semibold text-gray-600 dark:text-gray-400"> Deskripsi </span>
+						<textarea bind:value={quizIntro.description} class="textarea" rows={2}></textarea>
 					</label>
 					<label class="flex items-start gap-4">
 						<span class="w-64 font-semibold text-gray-600 dark:text-gray-400"> Instruksi </span>
@@ -182,6 +187,10 @@
 					</label>
 					<label class="flex items-start gap-4">
 						<span class="w-64 font-semibold text-gray-600 dark:text-gray-400"> Acak Jawaban </span>
+						<input type="checkbox" bind:checked={quizSettings.shuffleAnswer} class="checkbox" />
+					</label>
+					<label class="flex items-start gap-4">
+						<span class="w-64 font-semibold text-gray-600 dark:text-gray-400"> Sekali Jawab </span>
 						<input type="checkbox" bind:checked={quizSettings.oneWay} class="checkbox" />
 					</label>
 				</div>
@@ -217,7 +226,7 @@
 
 				<div class="flex flex-col gap-4">
 					<h3 class="text-xl font-medium">Daftar Referensi</h3>
-					<div class="card-border">
+					<div class="card-border bg-white dark:bg-gray-900">
 						{#if quizRefs.length === 0}
 							<p class="text-gray-600 dark:text-gray-400">Belum ada referensi</p>
 						{/if}

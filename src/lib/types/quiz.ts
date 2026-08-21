@@ -8,6 +8,7 @@ export interface IQuiz {
 
 export interface IQuizIntro {
 	title: string;
+	description: string;
 	instruction: string;
 	example: string | null;
 }
@@ -16,6 +17,7 @@ export interface IQuizSettings {
 	numberOfQuestion: number;
 	timePerQuestionInSecond: number;
 	shuffleQuestion: boolean;
+	shuffleAnswer: boolean;
 	oneWay: boolean;
 }
 

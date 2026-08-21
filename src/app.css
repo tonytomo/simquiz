@@ -57,7 +57,7 @@
 		@apply hover:bg-green-600 active:bg-green-600 dark:text-white;
 	}
 	.btn-danger {
-		@apply bg-red-700 hover:bg-red-600 active:bg-red-600 dark:bg-red-500 dark:text-white;
+		@apply bg-red-300 hover:bg-red-400 active:bg-red-600 dark:bg-red-500 dark:text-white;
 	}
 
 	.input {
@@ -89,8 +89,20 @@
 	}
 
 	.checkbox {
-		@apply size-8 rounded border-2 border-gray-300 bg-white/90 text-gray-900 focus:ring-1 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100;
+		@apply size-8 rounded bg-red-300 text-gray-900 focus:ring-1 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100;
+		@apply relative appearance-none border-2 border-b-4 border-gray-300;
 		@apply focus:border-gray-900 dark:focus:border-gray-100;
+	}
+	.checkbox::after {
+		content: '✘';
+		@apply absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-xl text-white;
+	}
+	.checkbox:checked {
+		@apply bg-teal-500;
+	}
+	.checkbox:checked::after {
+		content: '✔';
+		@apply absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-xl text-white;
 	}
 
 	.range {
@@ -104,7 +116,7 @@
 		@apply outline-none;
 	}
 	.range::-webkit-slider-runnable-track {
-		@apply rounded-lg bg-gray-200 dark:bg-gray-800;
+		@apply rounded-lg bg-white dark:bg-gray-800;
 	}
 
 	.card {
