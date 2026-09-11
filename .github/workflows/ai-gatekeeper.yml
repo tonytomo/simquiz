@@ -1,0 +1,112 @@
+name: AI Gatekeeper & Auto-Merge
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  validate-and-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 1. Deterministic checks: stop early if tests fail
+      - name: Run Tests
+        run: |
+          if [ -f package.json ]; then npm test; fi
+          if [ -f requirements.txt ]; then pytest; fi
+
+      # 2. Run AI Code Review
+      - name: AI Code Review
+        id: ai_review
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          python3 - << 'EOF'
+          import os, json, subprocess, urllib.request
+
+          pr_number = os.environ["PR_NUMBER"]
+          pr_title = os.environ.get("PR_TITLE", "")
+          pr_body = os.environ.get("PR_BODY", "")
+          api_key = os.environ["GEMINI_API_KEY"]
+
+          # 1. Check for manual developer bypass
+          if "[skip ai]" in (pr_title + pr_body).lower() or "[force merge]" in (pr_title + pr_body).lower():
+              print("Manual bypass tag detected. Skipping AI review.")
+              subprocess.run(["gh", "pr", "comment", pr_number, "--body", "🤖 **AI Gatekeeper:** Bypassed via manual override tag."], check=True)
+              exit(0)
+
+          # 2. Grab diff
+          diff = subprocess.check_output(["git", "diff", "origin/main...HEAD"]).decode("utf-8")
+          if not diff.strip():
+              print("No diff detected.")
+              exit(0)
+
+          diff_truncated = diff[:15000]
+
+          # 3. Supply PR Intent & Diff to AI
+          prompt = f"""You are an automated code review gatekeeper. 
+          The developer provided this context for the change:
+          Title: {pr_title}
+          Description: {pr_body}
+
+          Review this git diff in light of the developer's stated intent:
+          ```diff
+          {diff_truncated}
+          ```
+          Respond ONLY with a valid JSON object matching this schema:
+          {{
+            "passed": true/false,
+            "feedback": "Concise summary of findings or issues in markdown format"
+          }}
+          CRITICAL: If large blocks of code/files were deleted because they were refactored or made dynamic according to the PR context, DO NOT flag this as a regression. Only fail for genuine syntax errors, leaked secrets, or broken logic.
+          """
+
+          url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
+          payload = {
+              "contents": [{"parts": [{"text": prompt}]}],
+              "generationConfig": {"response_mime_type": "application/json"}
+          }
+
+          req = urllib.request.Request(
+              url,
+              data=json.dumps(payload).encode("utf-8"),
+              headers={"Content-Type": "application/json"}
+          )
+
+          try:
+              with urllib.request.urlopen(req) as resp:
+                  res_data = json.loads(resp.read().decode("utf-8"))
+                  content = res_data["candidates"][0]["content"]["parts"][0]["text"]
+                  result = json.loads(content)
+          except Exception as e:
+              result = {"passed": False, "feedback": f"Review execution error: {e}"}
+
+          passed = result.get("passed", False)
+          feedback = result.get("feedback", "No feedback provided.")
+
+          comment_body = f"### 🤖 AI Gatekeeper Review\n\n**Verdict:** {'✅ Approved' if passed else '❌ Changes Requested'}\n\n{feedback}"
+          subprocess.run(["gh", "pr", "comment", pr_number, "--body", comment_body], check=True)
+
+          if not passed:
+              exit(1)
+          EOF
+
+      # 3. Auto-merge if everything passed
+      - name: Auto-Merge
+        if: steps.ai_review.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr merge ${{ github.event.pull_request.number }} --squash --auto
